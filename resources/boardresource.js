@@ -6,6 +6,7 @@ var router = express.Router();
 var jwt = require('jsonwebtoken');
 var Board = require('../model/board.js');
 var User = require('../model/user.js');
+var Role = require('../model/role.js')
 
 /**
  * Get all boards a specific user participates in
@@ -75,16 +76,13 @@ router.get('/:boardid', function(req, res) {
             User.findOne({username: decoded.username}, function(err, user) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
-                } else if (function() {
-                        for (var i = 0; i < user.roles.length; i++) {
-                            if (user.roles[i].boardId == req.params.boardId){
-                                return true;
-                            }
+                    Role.find({userId: user._id, boardId: req.params.boardId}, function(err, roleResult) {
+                        if (err) {
+                            res.status(400).json({error: 'Bad Request'});
+                        } else if (roleResult.length > 0) {
+                            res.status(401).json({error: 'Forbidden'});
                         }
-                        return false;
-                    })
-                {
-                    res.status(401).json({error: 'Forbidden'});
+                    });
                 }
             });
 
@@ -95,6 +93,30 @@ router.get('/:boardid', function(req, res) {
                     res.status(200).json(result);
                 }
             })
+        }
+    })
+});
+
+router.get('/edit/:boardid', function(req, res) {
+    var token = req.header("token");
+    jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            res.status(401).json({error: 'Forbidden'});
+        } else {
+            User.findOne({username: decoded.username}, function(err, user) {
+                if (err) {
+                    res.status(400).json({error: 'Bad Request'});
+                    Role.find({userId: user._id, boardId: req.params.boardId}, function(err, roleResult) {
+                        if (err) {
+                            res.status(400).json({error: 'Bad Request'});
+                        } else if (roleResult.length > 0) {
+                            res.status(401).json({error: 'Forbidden'});
+                        }
+                    });
+                }
+            });
+
+            //TODO: edit board
         }
     })
 });
