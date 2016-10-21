@@ -127,6 +127,8 @@ router.post('/edit', function(req, res) {
     })
 });
 
+router.post('/')
+
 router.post('/new', function(req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
@@ -254,17 +256,23 @@ router.post('/addstory', function(req, res) {
         comments: []
     };
 
-    Board.findOne({_id: req.params.boardId}, {$push: {columns: newColumn}}, function(err, result) {
+    Board.findOne({_id: req.params.boardId}, function(err, result) {
         if (err) {
             res.status(400).json({error: 'Bad Request'});
         } else {
             for (var i = 0; i < result.columns[i]; i++) {
                 if (result.columns[i].position == req.body.columnPosition) {
-                    result.columns[i].stories.push()
+                    result.columns[i].stories.push(newStory)
                 }
             }
 
-            res.status(200).json(result);
+            result.save(function(err) {
+                if (err) {
+                    res.status(400).json({error: 'Bad Request'});
+                } else {
+                    res.status(200).json(result);
+                }
+            });
         }
     });
 
