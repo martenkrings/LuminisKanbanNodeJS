@@ -127,7 +127,73 @@ router.post('/edit', function(req, res) {
     })
 });
 
-router.post('/')
+router.post('/editcolumn', function(req, res) {
+    if (err) {
+        res.status(401).json({error: 'Forbidden'});
+    } else {
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                res.status(400).json({error: 'Bad Request'});
+                Role.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                    if (err) {
+                        res.status(400).json({error: 'Bad Request'});
+                    } else if (roleResult.length > 0) {
+                        res.status(401).json({error: 'Forbidden'});
+                    }
+                });
+            }
+        });
+    }
+
+    Board.findOne({_id: req.params.boardId}, function(err, result) {
+        if (err) {
+            res.status(400).json({error: 'Bad Request'});
+        } else {
+            for (var i = 0; i < result.columns[i]; i++) {
+                if (result.columns[i].position == req.body.columnPosition) {
+                    result.columns[i].name = req.body.name;
+                    result.columns[i].position = req.body.position;
+                    result.columns[i].wipLimit = req.body.wipLimit;
+                }
+            }
+
+            result.save(function(err) {
+                if (err) {
+                    res.status(400).json({error: 'Bad Request'});
+                } else {
+                    res.status(200).json(result);
+                }
+            });
+        }
+    });
+});
+
+router.post('/editstory', function(req, res) {
+    if (err) {
+        res.status(401).json({error: 'Forbidden'});
+    } else {
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                res.status(400).json({error: 'Bad Request'});
+                Role.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                    if (err) {
+                        res.status(400).json({error: 'Bad Request'});
+                    } else if (roleResult.length > 0) {
+                        res.status(401).json({error: 'Forbidden'});
+                    }
+                });
+            }
+        });
+    }
+
+    Board.findOne({_id: req.params.boardId}, function(err, result) {
+        if (err) {
+            res.status(400).json({error: 'Bad Request'});
+        } else {
+            //TODO: edit story
+        }
+    });
+});
 
 router.post('/new', function(req, res) {
     var token = req.header("token");
@@ -275,7 +341,6 @@ router.post('/addstory', function(req, res) {
             });
         }
     });
-
 });
 
 module.exports = router;
