@@ -97,7 +97,7 @@ router.get('/:boardid', function(req, res) {
     })
 });
 
-router.get('/edit/:boardid', function(req, res) {
+router.post('/edit', function(req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
         if (err) {
@@ -116,12 +116,18 @@ router.get('/edit/:boardid', function(req, res) {
                 }
             });
 
-            //TODO: edit board
+            Board.update({_id: req.body._id}, {'$set': {title: req.body.title, description: req.body.description}}, function(err) {
+                if (err) {
+                    res.status(400).json({'error': err.message});
+                } else {
+                    res.status(200).send("Data changed");
+                }
+            })
         }
     })
 });
 
-router.post('new', function(req, res) {
+router.post('/new', function(req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
         if (err) {
@@ -181,6 +187,87 @@ router.post('new', function(req, res) {
             })
         }
     })
+});
+
+router.post('/addcolumn', function(req, res) {
+    if (err) {
+        res.status(401).json({error: 'Forbidden'});
+    } else {
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                res.status(400).json({error: 'Bad Request'});
+                Role.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                    if (err) {
+                        res.status(400).json({error: 'Bad Request'});
+                    } else if (roleResult.length > 0) {
+                        res.status(401).json({error: 'Forbidden'});
+                    }
+                });
+            }
+        });
+    }
+
+    var newColumn = {
+        name: req.body.name,
+        position: req.body.position,
+        wipLlimit: req.body.wipLimit,
+        stories: []
+    };
+
+    Board.findOneAndUpdate({_id: req.params.boardId}, {$push: {columns: newColumn}}, function(err, result) {
+        if (err) {
+            res.status(400).json({error: 'Bad Request'});
+        } else {
+            res.status(200).json(result);
+        }
+    });
+
+});
+
+router.post('/addstory', function(req, res) {
+    if (err) {
+        res.status(401).json({error: 'Forbidden'});
+    } else {
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                res.status(400).json({error: 'Bad Request'});
+                Role.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                    if (err) {
+                        res.status(400).json({error: 'Bad Request'});
+                    } else if (roleResult.length > 0) {
+                        res.status(401).json({error: 'Forbidden'});
+                    }
+                });
+            }
+        });
+    }
+
+    var newStory = {
+        title: req.body.title,
+        description: req.body.desccription,
+        storyPoints: req.body.storyPoints,
+        priority: req.body.priority,
+        dateCreated: Date.now(),
+        dateMoved: Date.now(),
+        userIdCreated: req.body.userIdCreated,
+        userIdLastMoved: req.body.userIdLastMoved,
+        comments: []
+    };
+
+    Board.findOne({_id: req.params.boardId}, {$push: {columns: newColumn}}, function(err, result) {
+        if (err) {
+            res.status(400).json({error: 'Bad Request'});
+        } else {
+            for (var i = 0; i < result.columns[i]; i++) {
+                if (result.columns[i].position == req.body.columnPosition) {
+                    result.columns[i].stories.push()
+                }
+            }
+
+            res.status(200).json(result);
+        }
+    });
+
 });
 
 module.exports = router;
