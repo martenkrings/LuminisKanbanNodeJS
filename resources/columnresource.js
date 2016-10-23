@@ -48,4 +48,88 @@ router.post('/delete', function (req, res) {
     )
 });
 
+/**
+ * Edit column name and wip limit by columnid
+ */
+router.post('/editcolumn', function(req, res) {
+    if (err) {
+        res.status(401).json({error: 'Forbidden'});
+    } else {
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                res.status(400).json({error: 'Bad Request'});
+                RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                    if (err) {
+                        res.status(400).json({error: 'Bad Request'});
+                    } else if (roleResult.length > 0) {
+                        res.status(401).json({error: 'Forbidden'});
+                    }
+                });
+            }
+        });
+    }
+
+    Column.update({_id: req.body._id}, {'$set': {name: req.body.name, wipLimit: req.body.wipLimit}}, function(err, result) {
+        if (err) {
+            res.status(400).json({'error': err.message});
+        } else {
+            res.status(200).send(result);
+        }
+    })
+});
+
+/**
+ * Create a new Column
+ */
+router.post('/addcolumn', function(req, res) {
+    if (err) {
+        res.status(401).json({error: 'Forbidden'});
+    } else {
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                res.status(400).json({error: 'Bad Request'});
+                RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                    if (err) {
+                        res.status(400).json({error: 'Bad Request'});
+                    } else if (roleResult.length > 0) {
+                        res.status(401).json({error: 'Forbidden'});
+                    }
+                });
+            }
+        });
+    }
+
+    var newColumn = Column ({
+        BoardId: req.body.boardId,
+        name: req.body.name,
+        position: req.body.position,
+        wipLlimit: req.body.wipLimit
+    });
+
+    Column.find({boardId: req.body.boardId}, function(err, columnsResult) {
+        if (err) {
+            res.status(400).json({error: 'Bad Request'});
+        } else {
+            for (var i = 0; i < columnsResult.length; i++) {
+                if (columnsResult[i].position >= req.body.position) {
+                    Column.update({_id: columnsResult[i]._id}, {'$set': {position: columnsResult[i].position + 1}}, function(updateErr) {
+                        if (err) {
+                            res.status(400).json({error: 'Bad Request'});
+                        }
+                    })
+                }
+            }
+        }
+    });
+
+    newColumn.save(function() {
+        if (err) {
+            res.status(400).json({'error': err.message});
+            return
+        }
+        res.status(201).json();
+    })
+
+});
+
 module.exports = router;
