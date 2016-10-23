@@ -4,6 +4,7 @@
 var mongoose = require('mongoose');
 
 var roleSchema = new mongoose.Schema({
+    boardId: {type: String, required: true},
     name: {type: String, required: true},
     manageStories: {type: Boolean, default: false},
     moveFrom: [{

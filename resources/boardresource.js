@@ -200,7 +200,7 @@ router.post('/editstory', function(req, res) {
 
             Story.update({_id: req.body._id}, {
                 '$set': {
-                    boardId: req.body.boardId,
+                    columnId: req.body.columnId,
                     title: req.body.title,
                     description: req.body.description,
                     storyPoints: req.body.storyPoints,
@@ -217,6 +217,40 @@ router.post('/editstory', function(req, res) {
             })
         });
     }
+});
+
+/**
+ * Edit a role
+ */
+router.post('/editrole', function(req, res) {
+    var token = req.header("token");
+    jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            res.status(401).json({error: 'Forbidden'});
+        } else {
+            User.findOne({username: decoded.username}, function (err, user) {
+                if (err) {
+                    res.status(400).json({error: 'Bad Request'});
+                } else if (!user.isAdmin) {
+                    res.status(401).json({error: 'Forbidden'});
+                }
+            });
+        }
+
+        Role.update({_id: req.body.roleId}, {
+            '$set': {
+                name: req.body.name,
+                manageStories: req.body.manageStories,
+                moveFrom: req.body.moveFrom
+            }
+        }, function(err, result) {
+            if (err) {
+                res.status(400).json({'error': err.message});
+            } else {
+                res.status(200).send(result);
+            }
+        })
+    });
 });
 
 /**
@@ -240,16 +274,6 @@ router.post('/new', function(req, res) {
                 title: req.body.title,
                 description: req.body.description,
                 dateCreated: Date.now(),
-                roles: [{
-                    name: 'Observer'
-                }, {
-                    name: 'Product Owner',
-                    manageStories: true
-                }, {
-                    name: 'Admin',
-                    manageStories: true,
-                    moveFrom: [{boardId: 0}, {boardId: 1}, {boardId: 2}, {boardId: 3}]
-                }]
             });
 
             newBoard.save(function (err, result) {
@@ -283,12 +307,11 @@ router.post('/new', function(req, res) {
 
                     var columns = [];
 
-                    var columnSaveHandler = function (err, result) {
+                    var columnSaveHandler = function (err, columnresult) {
                         if (err) {
                             res.status(400).json({'error': err.message});
-                            return
                         } else {
-
+                            columns.push(columnresult._id)
                         }
                     };
 
@@ -298,16 +321,19 @@ router.post('/new', function(req, res) {
                     newDone.save(columnSaveHandler());
 
                     var newObserver = Role ({
+                        boardId: result._id,
                         name: 'Observer'
                     });
                     var newProductOwner = Role ({
+                        boardId: result._id,
                         name: 'Product Owner',
                         manageStories: true
                     });
                     var newBoardAdmin = Role ({
+                        boardId: result._id,
                         name: 'Board Admin',
                         manageStories: true,
-
+                        moveFrom: columns
                     });
                 }
                 res.status(201).json(result._id);
@@ -342,6 +368,22 @@ router.post('/addcolumn', function(req, res) {
         name: req.body.name,
         position: req.body.position,
         wipLlimit: req.body.wipLimit
+    });
+
+    Column.find({boardId: req.body.boardId}, function(err, columnsResult) {
+        if (err) {
+            res.status(400).json({error: 'Bad Request'});
+        } else {
+            for (var i = 0; i < columnsResult.length; i++) {
+                if (columnsResult[i].position >= req.body.position) {
+                    Column.update({_id: columnsResult[i]._id}, {'$set': {position: columnsResult[i].position + 1}}, function(updateErr) {
+                        if (err) {
+                            res.status(400).json({error: 'Bad Request'});
+                        }
+                    })
+                }
+            }
+        }
     });
 
     newColumn.save(function() {
@@ -415,10 +457,19 @@ router.post('/addrole', function(req, res) {
         }
 
         var newRole = {
+            boardId: req.body.boardId,
             name: req.body.name,
             manageStories: req.body.manageStories,
+            moveFrom: req.body.moveFrom
+        };
 
-        }
+        newRole.save(function() {
+            if (err) {
+                res.status(400).json({'error': err.message});
+                return
+            }
+            res.status(201).json();
+        })
     });
 });
 
