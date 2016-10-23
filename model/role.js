@@ -4,9 +4,11 @@
 var mongoose = require('mongoose');
 
 var roleSchema = new mongoose.Schema({
-    userId: {type: String, required: true},
-    boardId: {type: String, required: true},
-    roleIndex: {type: Number, required: true}
+    name: {type: String, required: true},
+    manageStories: {type: Boolean, default: false},
+    moveFrom: [{
+        columnId: {type: Number, required: true}
+    }]
 });
 
 module.exports = mongoose.model('Role', roleSchema);

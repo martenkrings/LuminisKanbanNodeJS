@@ -5,6 +5,7 @@ var Board = require('./model/board.js');
 var Column = require('./model/column.js');
 var Comment = require('./model/comment.js');
 var Role = require('./model/role.js');
+var RoleToUser = require('./model/roletouser.js');
 var Story = require('./model/story');
 var User = require('./model/user.js');
 
@@ -22,6 +23,10 @@ Comment.remove({}, function(err){
 
 Role.remove({}, function(err){
     console.log('Old roles removed')
+});
+
+RoleToUser.remove({}, function(err){
+    console.log('Old role, user associations removed')
 });
 
 Story.remove({}, function(err){

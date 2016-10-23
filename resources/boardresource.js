@@ -8,6 +8,7 @@ var Board = require('../model/board.js');
 var Column = require('../model/column.js');
 var Comment = require('../model/comment.js');
 var Role = require('../model/role.js');
+var RoleToUser = require('../model/roletouser.js');
 var Story = require('../model/story');
 var User = require('../model/user.js');
 
@@ -78,7 +79,7 @@ router.get('/:boardid', function(req, res) {
             User.findOne({username: decoded.username}, function(err, user) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
-                    Role.find({userId: user._id, boardId: req.params.boardId}, function(err, roleResult) {
+                    RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function(err, roleResult) {
                         if (err) {
                             res.status(400).json({error: 'Bad Request'});
                         } else if (roleResult.length > 0) {
@@ -127,7 +128,7 @@ router.post('/edit', function(req, res) {
             User.findOne({username: decoded.username}, function(err, user) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
-                    Role.find({userId: user._id, boardId: req.params.boardId}, function(err, roleResult) {
+                    RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function(err, roleResult) {
                         if (err) {
                             res.status(400).json({error: 'Bad Request'});
                         } else if (roleResult.length > 0) {
@@ -158,7 +159,7 @@ router.post('/editcolumn', function(req, res) {
         User.findOne({username: decoded.username}, function (err, user) {
             if (err) {
                 res.status(400).json({error: 'Bad Request'});
-                Role.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
                     if (err) {
                         res.status(400).json({error: 'Bad Request'});
                     } else if (roleResult.length > 0) {
@@ -188,7 +189,7 @@ router.post('/editstory', function(req, res) {
         User.findOne({username: decoded.username}, function (err, user) {
             if (err) {
                 res.status(400).json({error: 'Bad Request'});
-                Role.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
                     if (err) {
                         res.status(400).json({error: 'Bad Request'});
                     } else if (roleResult.length > 0) {
@@ -280,18 +281,34 @@ router.post('/new', function(req, res) {
                         wipLimit: 0
                     });
 
-                    var saveHandler = function (err) {
+                    var columns = [];
+
+                    var columnSaveHandler = function (err, result) {
                         if (err) {
                             res.status(400).json({'error': err.message});
                             return
+                        } else {
+
                         }
-                        res.status(201).json();
                     };
 
-                    newBacklog.save(saveHandler());
-                    newToDo.save(saveHandler());
-                    newInProgress.save(saveHandler());
-                    newDone.save(saveHandler());
+                    newBacklog.save(columnSaveHandler());
+                    newToDo.save(columnSaveHandler());
+                    newInProgress.save(columnSaveHandler());
+                    newDone.save(columnSaveHandler());
+
+                    var newObserver = Role ({
+                        name: 'Observer'
+                    });
+                    var newProductOwner = Role ({
+                        name: 'Product Owner',
+                        manageStories: true
+                    });
+                    var newBoardAdmin = Role ({
+                        name: 'Board Admin',
+                        manageStories: true,
+
+                    });
                 }
                 res.status(201).json(result._id);
             })
@@ -309,7 +326,7 @@ router.post('/addcolumn', function(req, res) {
         User.findOne({username: decoded.username}, function (err, user) {
             if (err) {
                 res.status(400).json({error: 'Bad Request'});
-                Role.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
                     if (err) {
                         res.status(400).json({error: 'Bad Request'});
                     } else if (roleResult.length > 0) {
@@ -347,7 +364,7 @@ router.post('/addstory', function(req, res) {
         User.findOne({username: decoded.username}, function (err, user) {
             if (err) {
                 res.status(400).json({error: 'Bad Request'});
-                Role.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
+                RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
                     if (err) {
                         res.status(400).json({error: 'Bad Request'});
                     } else if (roleResult.length > 0) {
@@ -377,6 +394,32 @@ router.post('/addstory', function(req, res) {
         }
         res.status(201).json();
     })
+});
+
+/**
+ *
+ */
+router.post('/addrole', function(req, res) {
+    var token = req.header("token");
+    jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            res.status(401).json({error: 'Forbidden'});
+        } else {
+            User.findOne({username: decoded.username}, function (err, user) {
+                if (err) {
+                    res.status(400).json({error: 'Bad Request'});
+                } else if (!user.isAdmin) {
+                    res.status(401).json({error: 'Forbidden'});
+                }
+            });
+        }
+
+        var newRole = {
+            name: req.body.name,
+            manageStories: req.body.manageStories,
+
+        }
+    });
 });
 
 module.exports = router;
