@@ -28,6 +28,12 @@ app.use('/api/users', userResource);
 var boardResource = require('./resources/boardresource.js');
 app.use('/api/boards', boardResource);
 
+var columnResource = require('./resources/columnresource.js');
+app.use('/api/columns', columnResource);
+
+var storyResource = require('./resources/storyresource.js');
+app.use('/api/stories', storyResource);
+
 app.listen(3000, function () {
     console.log('App listening on port 3000!');
 });

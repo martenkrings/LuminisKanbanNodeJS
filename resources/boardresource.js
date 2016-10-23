@@ -26,10 +26,20 @@ router.get('/', function(req, res) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
                 } else {
-                    Board.find({_id: user.roles.boardId}, function(err, result) {
-                        if (err) {
+                    RoleToUser.find({userId: user._id}, function(relationErr, relations) {
+                        if (relationErr) {
                             res.status(400).json({error: 'Bad Request'});
                         } else {
+                            var result = [];
+                            for (var i = 0; i < relations.length; i++) {
+                                Board.findOne({_id: realtions[i].boardId}, function(boardErr, board) {
+                                    if (boardErr) {
+                                        res.status(400).json({error: 'Bad Request'});
+                                    } else {
+                                        result.push(board)
+                                    }
+                                })
+                            }
                             res.status(200).json(result);
                         }
                     })
@@ -79,7 +89,7 @@ router.get('/:boardid', function(req, res) {
             User.findOne({username: decoded.username}, function(err, user) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
-                    RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function(err, roleResult) {
+                    RoleToUser.find({userId: user._id, boardId: req.params.boardid}, function(err, roleResult) {
                         if (err) {
                             res.status(400).json({error: 'Bad Request'});
                         } else if (roleResult.length > 0) {
@@ -417,7 +427,7 @@ router.post('/addstory', function(req, res) {
         });
     }
 
-    var newStory = {
+    var newStory = Story({
         columnId: req.body.columnId,
         title: req.body.title,
         description: req.body.desccription,
@@ -427,7 +437,7 @@ router.post('/addstory', function(req, res) {
         dateMoved: Date.now(),
         userIdCreated: req.body.userIdCreated,
         userIdLastMoved: req.body.userIdLastMoved
-    };
+    });
 
     newStory.save(function() {
         if (err) {
@@ -439,7 +449,7 @@ router.post('/addstory', function(req, res) {
 });
 
 /**
- *
+ * Create a new role
  */
 router.post('/addrole', function(req, res) {
     var token = req.header("token");
@@ -456,12 +466,12 @@ router.post('/addrole', function(req, res) {
             });
         }
 
-        var newRole = {
+        var newRole = Role({
             boardId: req.body.boardId,
             name: req.body.name,
             manageStories: req.body.manageStories,
             moveFrom: req.body.moveFrom
-        };
+        });
 
         newRole.save(function() {
             if (err) {
