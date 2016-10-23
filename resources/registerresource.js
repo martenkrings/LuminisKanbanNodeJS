@@ -12,7 +12,7 @@ router.post('/', function (req, res){
         password: req.body.password,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
-        email: req.body.email,
+        email: req.body.email
     });
 
     newUser.save(function (err){
