@@ -70,7 +70,7 @@ router.get('/', function (req, res) {
                             }
                         }
                     }
-                    //send the resulting board array to the client as a json string
+                    //send the resulting board array to the client as a json object
                     res.status(200).json({boards: resultBoards});
                 });
             });
