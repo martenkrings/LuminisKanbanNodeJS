@@ -83,43 +83,44 @@ router.get('/', function (req, res) {
  * requires admin privileges
  */
 router.get('/all', function (req, res) {
-
+    //get token
     var token = req.header("token");
-
+    //check the existence of a token
     if (!token) {
         return res.status(401).json({error: 'No token provided, abandon ship!'});
     }
-
+    //verify the token is valid
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
-
+        //if the token is invalid, tell the client it doesn't have access
         if (err) {
             return res.status(401).json({error: 'Forbidden'});
         }
-
+        //find the user by the username contained in the token
         User.findOne({username: decoded.username}, function (err, user) {
+            //if something went wrong, tell the client there was a client side error
             if (err) {
                 return res.status(500).json({error: 'Server error.'});
             }
-
+            //if no user could be found, tell the client the user couldn't be found
             if (!user) {
                 return res.status(404).json({error: 'User not found.'})
             }
-
+            //if the user from the token isn't an admin, tell the client it doesn't have permission
             if (!user.isAdmin) {
                 return res.status(401).json({error: 'Forbidden'});
             }
 
             Board.find({}, {title: true, description: true, dateCreated: true}, function (err, result) {
+                //if something went wrong, tell the client there was a client side error
                 if (err) {
                     return res.status(500).json({error: 'Server error.'});
                 }
-
+                //if no boards were found, tell the client no boards were found
                 if (!result.length) {
                     return res.status(404).json({error: 'No boards found.'})
                 }
-
+                //send the resulting board array to the client as a json object
                 res.status(200).json({boards: result});
-
             });
         });
     });
