@@ -24,7 +24,50 @@ router.get('/:userid', function (req, res) {
     })
 });
 
-router.post('/giverole', function(req, res) {
+router.get('/:username', function (req, res) {
+    var token = req.header("token");
+
+    if (!token) {
+        return res.status(401).json({error: 'No token provided, abandon ship!'});
+    }
+
+    jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+
+        if (err) {
+            return res.status(401).json({error: 'Forbidden'});
+        }
+
+        User.findOne({username: decoded.username}, function (err, user) {
+
+            if (err) {
+                return res.status(500).json({error: 'Server error.'});
+            }
+
+            if (!user) {
+                return res.status(404).json({error: 'User not found.'});
+            }
+
+            if (!user.isAdmin) {
+                return res.status(401).json({error: 'Forbidden'});
+            }
+
+            User.findOne({username: req.params.username}, function(err, result) {
+
+                if (err) {
+                    return res.status(500).json({error: 'Server error.'});
+                }
+
+                if (!result) {
+                    return res.status(404).json({error: 'User not found.'});
+                }
+
+                res.status(200).json({message: 'User found!'});
+            });
+        });
+    });
+});
+
+router.post('/giverole', function (req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
         if (err) {
@@ -50,7 +93,7 @@ router.post('/giverole', function(req, res) {
             roleId: req.body.roleId
         });
 
-        newRelation.save(function() {
+        newRelation.save(function () {
             if (err) {
                 res.status(400).json({'error': err.message});
                 return

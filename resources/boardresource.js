@@ -269,8 +269,10 @@ router.post('/edit', function (req, res) {
  */
 router.post('/new', function (req, res) {
 
+    //Get the token from the request.
     var token = req.header("token");
 
+    //If there is no token, return.
     if (!token) {
         return res.status(401).json({error: 'No token provided, abandon ship!'});
     }
@@ -316,7 +318,10 @@ router.post('/new', function (req, res) {
                     });
 
                     newColumn.save(function (err) {
-                        return res.status(500).json({error: 'Server error.'});
+
+                        if (err) {
+                            return res.status(500).json({error: 'Server error.'});
+                        }
                     });
 
                 }
@@ -345,15 +350,55 @@ router.post('/new', function (req, res) {
                             }
                         }
 
-                        newRole.save (function(err) {
+                        newRole.save(function (err) {
                             if (err) {
                                 return res.status(500).json({error: 'Error saving role'})
                             }
                         });
                     }
 
-                    res.status(201).json({newBoard: result});
+                    Role.find({boardId: result._id}, function (roleErr, roles) {
 
+                        if (roleErr) {
+                            return res.status(500).json({error: 'Server error'});
+                        }
+
+                        User.find({}, function (userErr, users) {
+
+                            if (userErr) {
+                                return res.status(500).json({error: 'Server error'});
+                            }
+
+                            if (!users.length) {
+                                return res.status(404).json({error: 'No users found in database :('});
+                            }
+
+                            for (var i = 0; i < roles.length; i++) {
+
+                                for (var j = 0; j < users.length; j++) {
+
+                                    for (var k = 0; k < req.body.usernameList; k++) {
+
+                                        if (users[j].username == usernameList[k].username) {
+
+                                            var roleUserPair = new RoleToUser({
+                                                userId: users[i]._id,
+                                                boardId: result._id,
+                                                roleId: roles[i]._id
+                                            });
+
+                                            roleUserPair.save(function (err) {
+                                                if (err) {
+                                                    return res.status(500).json({error: 'Server error'});
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            res.status(201).json({newBoard: result});
+                        });
+                    });
                 });
             });
         });
