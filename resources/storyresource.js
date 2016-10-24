@@ -213,7 +213,7 @@ router.post('/addstory', function (req, res) {
                 return res.status(404).json({error: 'User not found.'})
             }
 
-            Column.findOne({_id: req.body.storyId}, function (columnErr, column) {
+            Column.findOne({_id: req.body.columnId}, function (columnErr, column) {
 
                 if (err) {
                     return res.status(500).json({error: 'Server error.'});

@@ -285,7 +285,7 @@ router.post('/new', function (req, res) {
 
         User.findOne({username: decoded.username}, function (err, user) {
             if (err) {
-                return res.status(500).json({error: 'Server error.'});
+                return res.status(500).json({error: 'Server error, user not found in token.'});
             }
 
             if (!user) {
@@ -302,10 +302,12 @@ router.post('/new', function (req, res) {
                 dateCreated: Date.now()
             });
 
+            console.log({board: newBoard});
+
             newBoard.save(function (err, result) {
 
                 if (err) {
-                    return res.status(500).json({error: 'Server error.'});
+                    return res.status(500).json({error: err.message});
                 }
 
                 for (var i = 0; i < req.body.columns; i++) {
@@ -370,7 +372,7 @@ router.post('/new', function (req, res) {
                             }
 
                             if (!users.length) {
-                                return res.status(404).json({error: 'No users found in database :('});
+                                 return res.status(404).json({error: 'No users found in database :('});
                             }
 
                             for (var i = 0; i < roles.length; i++) {

@@ -8,7 +8,7 @@ var roleSchema = new mongoose.Schema({
     name: {type: String, required: true},
     manageStories: {type: Boolean, default: false},
     moveFrom: [{
-        columnId: {type: Number, required: true}
+        columnId: {type: String, required: true}
     }]
 });
 
