@@ -6,7 +6,6 @@ var router = express.Router();
 var jwt = require('jsonwebtoken');
 var Board = require('../model/board.js');
 var Column = require('../model/column.js');
-var Comment = require('../model/comment.js');
 var Role = require('../model/role.js');
 var RoleToUser = require('../model/roletouser.js');
 var Story = require('../model/story');
@@ -14,53 +13,54 @@ var User = require('../model/user.js');
 
 /**
  * Get all boards a specific user participates in
+ * requires a valid token
  */
 router.get('/', function (req, res) {
-
+    //get token
     var token = req.header("token");
-
+    //check the existence of a token
     if (!token) {
         return res.status(401).json({error: 'No token provided, abandon ship!'});
     }
-
+    //verify the token is valid
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
-
+        //if the token is invalid, tell the client it doesn't have access
         if (err) {
             return res.status(401).json({error: 'Forbidden'});
         }
-
+        //find the user by the username contained in the token
         User.findOne({username: decoded.username}, function (err, user) {
-
+            //if something went wrong, tell the client there was a client side error
             if (err) {
                 return res.status(500).json({error: 'Server error.'});
             }
-
+            //if no user could be found, tell the client the user couldn't be found
             if (!user) {
                 return res.status(404).json({error: 'User not found.'})
             }
-
+            //find the roles all the roles a user has with boards
             RoleToUser.find({userId: user._id}, function (relationErr, relations) {
-
+                //if something went wrong, tell the client there was a client side error
                 if (relationErr) {
                     return res.status(500).json({error: 'Server error.'});
                 }
-
+                //if no relation could be found, tell the client no relations could be found
                 if (!relations) {
                     return res.status(404).json({error: 'Relation to board not found.'})
                 }
-
+                //get all boards
                 Board.find({}, function (boardErr, boards) {
-
+                    //prepare an array for the result
                     var resultBoards = [];
-
+                    //if something went wrong, tell the client there was a client side error
                     if (boardErr) {
                         return res.status(500).json({error: 'Server error.'});
                     }
-
+                    //if no boards could be found, tell the client no boards could be found
                     if (!boards.length) {
                         return res.status(404).json({error: 'Board not found.'})
                     }
-
+                    //check my relations for the id of each board and add any board that occurs in the relations
                     for (var i = 0; i < relations.length; i++) {
 
                         for (var j = 0; j < boards.length; j++) {
@@ -70,6 +70,7 @@ router.get('/', function (req, res) {
                             }
                         }
                     }
+                    //send the resulting board array to the client as a json string
                     res.status(200).json({boards: resultBoards});
                 });
             });
@@ -79,6 +80,7 @@ router.get('/', function (req, res) {
 
 /**
  * Get all boards
+ * requires admin privileges
  */
 router.get('/all', function (req, res) {
 
