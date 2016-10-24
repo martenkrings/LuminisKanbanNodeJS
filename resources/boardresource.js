@@ -148,10 +148,10 @@ router.get('/:boardid', function (req, res) {
             }
 
             if (!user) {
-                return res.status(404).json({error: 'User not found.'})
+                return res.status(404).json({error: 'User not found.'});
             }
 
-            if (!user.isAdmin) {
+            if (user.isAdmin == false) {
                 return res.status(401).json({error: 'Forbidden'});
             }
 
@@ -162,56 +162,58 @@ router.get('/:boardid', function (req, res) {
                 }
 
                 if (!roleResult) {
-                    return res.status(404).json({error: 'No permissions found.'})
+                    return res.status(404).json({error: 'No permissions found.'});
                 }
 
                 if (!roleResult.length) {
                     return res.status(401).json({error: 'Forbidden'});
                 }
-            });
-        });
-    });
 
-    Board.findOne({_id: req.params.boardId}, function (boardErr, boardResult) {
+                Board.findOne({_id: req.params.boardId}, function (boardErr, boardResult) {
 
-        if (boardErr) {
-            return res.status(500).json({error: 'Server error'});
-        }
-
-        if (!boardResult) {
-            return res.status(404).json({error: 'Board not found.'})
-        }
-
-        Column.find({boardId: boardResult._id}, function (columnErr, columnResult) {
-
-            if (columnErr) {
-                return res.status(500).json({error: 'Server error'});
-            }
-
-            if (!columnResult) {
-                return res.status(404).json({error: 'Columns not found.'})
-            }
-
-            var stories = [];
-
-            for (var i = 0; i < columnResult.length; i++) {
-
-                stories.push(Story.find({columnId: columnResult[i]._id}, function (storyErr) {
-
-                    if (storyErr) {
+                    if (boardErr) {
                         return res.status(500).json({error: 'Server error'});
                     }
 
-                }))
-            }
+                    if (!boardResult) {
+                        return res.status(404).json({error: 'Board not found.'});
+                    }
 
-            var result = [boardResult, columnResult, stories];
+                    Column.find({boardId: boardResult._id}, function (columnErr, columnResult) {
 
-            res.status(200).json(result);
+                        if (columnErr) {
+                            return res.status(500).json({error: 'Server error'});
+                        }
 
+                        if (!columnResult) {
+                            return res.status(404).json({error: 'Columns not found.'})
+                        }
+
+                        var stories = [];
+
+                        for (var i = 0; i < columnResult.length; i++) {
+
+                            stories.push(Story.find({columnId: columnResult[i]._id}, function (storyErr) {
+
+                                if (storyErr) {
+                                    return res.status(500).json({error: 'Server error'});
+                                }
+
+                            }))
+                        }
+
+                        var result = [boardResult, columnResult, stories];
+
+                        res.status(200).json(result);
+
+                    });
+
+                });
+
+            });
         });
 
-    })
+    });
 });
 
 /**
