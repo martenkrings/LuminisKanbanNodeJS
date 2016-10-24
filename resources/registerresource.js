@@ -3,7 +3,6 @@
  */
 var express = require('express');
 var router = express.Router();
-var jwt = require('jsonwebtoken');
 var User = require('../model/user.js');
 
 router.post('/', function (req, res){

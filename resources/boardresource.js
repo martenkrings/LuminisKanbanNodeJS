@@ -15,80 +15,121 @@ var User = require('../model/user.js');
 /**
  * Get all boards a specific user participates in
  */
-router.get('/', function(req, res) {
+router.get('/', function (req, res) {
+
     var token = req.header("token");
+
+    if (!token) {
+        return res.status(401).json({error: 'No token provided, abandon ship!'});
+    }
+
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+
         if (err) {
-            res.status(401).json({error: 'Forbidden'});
-        } else {
-            User.findOne({username: decoded.username}, function(err, user) {
-                if (err) {
-                    res.status(400).json({error: 'Bad Request'});
-                } else {
-                    RoleToUser.find({userId: user._id}, function(relationErr, relations) {
-                        if (relationErr) {
-                            res.status(400).json({error: 'Bad Request'});
-                        } else {
-                            var result = [];
-                            for (var i = 0; i < relations.length; i++) {
-                                Board.findOne({_id: realtions[i].boardId}, function(boardErr, board) {
-                                    if (boardErr) {
-                                        res.status(400).json({error: 'Bad Request'});
-                                    } else {
-                                        result.push(board)
-                                    }
-                                })
-                            }
-                            res.status(200).json(result);
-                        }
-                    })
-                }
-            });
+            return res.status(401).json({error: 'Forbidden'});
         }
+
+        User.findOne({username: decoded.username}, function (err, user) {
+
+            if (err) {
+                return res.status(500).json({error: 'Server error.'});
+            }
+
+            if (!user) {
+                return res.status(404).json({error: 'User not found.'})
+            }
+
+            RoleToUser.find({userId: user._id}, function (relationErr, relations) {
+
+                if (relationErr) {
+                    return res.status(500).json({error: 'Server error.'});
+                }
+
+                if (!relations) {
+                    return res.status(404).json({error: 'Relation to board not found.'})
+                }
+
+                Board.find({}, function (boardErr, boards) {
+
+                    var resultBoards = [];
+
+                    if (boardErr) {
+                        return res.status(500).json({error: 'Server error.'});
+                    }
+
+                    if (!boards.length) {
+                        return res.status(404).json({error: 'Board not found.'})
+                    }
+
+                    for (var i = 0; i < relations.length; i++) {
+
+                        for (var j = 0; j < boards.length; j++) {
+
+                            if (relations[i].boardId == boards[j]._id) {
+                                resultBoards.push(boards[j]);
+                            }
+                        }
+                    }
+                    res.status(200).json({boards: resultBoards});
+                });
+            })
+        });
+
     })
 });
 
 /**
  * Get all boards
  */
-router.get('/all', function(req, res) {
+router.get('/all', function (req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+
         if (err) {
-            res.status(401).json({error: 'Forbidden'});
-        } else {
-            User.findOne({username: decoded.username}, function(err, user) {
-                if (err) {
-                    res.status(400).json({error: 'Bad Request'});
-                } else if (!user.isAdmin) {
-                    res.status(401).json({error: 'Forbidden'});
-                }
-            });
+            return res.status(401).json({error: 'Forbidden'});
         }
 
-        Board.find({},{title: true, description:true, dateCreated: true} , function(err, result) {
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                return res.status(400).json({error: 'Bad Request'});
+            }
+
+            if (!user) {
+                return res.status(404).json({error: 'User not found.'})
+            }
+
+            if (!user.isAdmin) {
+                return res.status(401).json({error: 'Forbidden'});
+            }
+        });
+
+        Board.find({}, {title: true, description: true, dateCreated: true}, function (err, result) {
             if (err) {
                 res.status(400).json({error: 'Bad Request'});
-            } else {
-                res.status(200).json(result);
             }
-        })
-    })
+
+            if (!result.length) {
+                return res.status(404).json({error: 'No boards found.'})
+            }
+
+            res.status(200).json({boards: result});
+        });
+    });
 });
 
 /**
  * Get specific board by id
  */
-router.get('/:boardid', function(req, res) {
+router.get('/:boardid', function (req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
         if (err) {
             res.status(401).json({error: 'Forbidden'});
         } else {
-            User.findOne({username: decoded.username}, function(err, user) {
+            User.findOne({username: decoded.username}, function (err, user) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
-                    RoleToUser.find({userId: user._id, boardId: req.params.boardid}, function(err, roleResult) {
+                    RoleToUser.find({userId: user._id, boardId: req.params.boardid}, function (err, roleResult) {
                         if (err) {
                             res.status(400).json({error: 'Bad Request'});
                         } else if (roleResult.length > 0) {
@@ -99,17 +140,17 @@ router.get('/:boardid', function(req, res) {
             });
         }
 
-        Board.findOne({_id: req.params.boardId}, function(boardErr, boardResult) {
+        Board.findOne({_id: req.params.boardId}, function (boardErr, boardResult) {
             if (boardErr) {
                 res.status(400).json({error: 'Bad Request'});
             } else {
-                Column.find({boardId: boardResult._id}, function(columnErr, columnResult) {
+                Column.find({boardId: boardResult._id}, function (columnErr, columnResult) {
                     if (columnErr) {
                         res.status(400).json({error: 'Bad Request'});
                     } else {
                         var stories = [];
                         for (var i = 0; i < columnResult.length; i++) {
-                            stories.append(Story.find({columnId: columnResult[i]._id}, function(storyErr) {
+                            stories.append(Story.find({columnId: columnResult[i]._id}, function (storyErr) {
                                 if (storyErr) {
                                     res.status(400).json({error: 'Bad Request'});
                                 }
@@ -128,16 +169,16 @@ router.get('/:boardid', function(req, res) {
 /**
  * Edit board title and description with the specific board's id
  */
-router.post('/edit', function(req, res) {
+router.post('/edit', function (req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
         if (err) {
             res.status(401).json({error: 'Forbidden'});
         } else {
-            User.findOne({username: decoded.username}, function(err, user) {
+            User.findOne({username: decoded.username}, function (err, user) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
-                    RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function(err, roleResult) {
+                    RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
                         if (err) {
                             res.status(400).json({error: 'Bad Request'});
                         } else if (roleResult.length > 0) {
@@ -148,7 +189,12 @@ router.post('/edit', function(req, res) {
             });
         }
 
-        Board.update({_id: req.body._id}, {'$set': {title: req.body.title, description: req.body.description}}, function(err, result) {
+        Board.update({_id: req.body._id}, {
+            '$set': {
+                title: req.body.title,
+                description: req.body.description
+            }
+        }, function (err, result) {
             if (err) {
                 res.status(400).json({'error': err.message});
             } else {
@@ -161,13 +207,13 @@ router.post('/edit', function(req, res) {
 /**
  * Create a new board with the parameters in the body of the request
  */
-router.post('/new', function(req, res) {
+router.post('/new', function (req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
         if (err) {
             res.status(401).json({error: 'Forbidden'});
         } else {
-            User.findOne({username: decoded.username}, function(err, user) {
+            User.findOne({username: decoded.username}, function (err, user) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
                 } else if (!user.isAdmin) {
@@ -175,7 +221,7 @@ router.post('/new', function(req, res) {
                 }
             });
 
-            var newBoard = Board ({
+            var newBoard = Board({
                 title: req.body.title,
                 description: req.body.description,
                 dateCreated: Date.now()
@@ -185,25 +231,25 @@ router.post('/new', function(req, res) {
                 if (err) {
                     res.status(400).json({'error': err.message});
                 } else {
-                    var newBacklog = Column ({
+                    var newBacklog = Column({
                         boardId: result._id,
                         name: 'Backlog',
                         position: 0,
                         wipLimit: 0
                     });
-                    var newToDo = Column ({
+                    var newToDo = Column({
                         boardId: result._id,
                         name: 'To-Do',
                         position: 1,
                         wipLimit: 0
                     });
-                    var newInProgress = Column ({
+                    var newInProgress = Column({
                         boardId: result._id,
                         name: 'In Progress',
                         position: 2,
                         wipLimit: 0
                     });
-                    var newDone = Column ({
+                    var newDone = Column({
                         boardId: result._id,
                         name: 'Done',
                         position: 3,
@@ -225,16 +271,16 @@ router.post('/new', function(req, res) {
                     newInProgress.save(columnSaveHandler(err, columnResult));
                     newDone.save(columnSaveHandler(err, columnResult));
 
-                    var newObserver = Role ({
+                    var newObserver = Role({
                         boardId: result._id,
                         name: 'Observer'
                     });
-                    var newProductOwner = Role ({
+                    var newProductOwner = Role({
                         boardId: result._id,
                         name: 'Product Owner',
                         manageStories: true
                     });
-                    var newBoardAdmin = Role ({
+                    var newBoardAdmin = Role({
                         boardId: result._id,
                         name: 'Board Admin',
                         manageStories: true,
@@ -260,7 +306,7 @@ router.post('/new', function(req, res) {
 /**
  * Create a new role
  */
-router.post('/addrole', function(req, res) {
+router.post('/addrole', function (req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
         if (err) {
@@ -282,7 +328,7 @@ router.post('/addrole', function(req, res) {
             moveFrom: req.body.moveFrom
         });
 
-        newRole.save(function() {
+        newRole.save(function () {
             if (err) {
                 res.status(400).json({'error': err.message});
                 return
@@ -295,7 +341,7 @@ router.post('/addrole', function(req, res) {
 /**
  * Edit a role
  */
-router.post('/editrole', function(req, res) {
+router.post('/editrole', function (req, res) {
     var token = req.header("token");
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
         if (err) {
@@ -316,7 +362,7 @@ router.post('/editrole', function(req, res) {
                 manageStories: req.body.manageStories,
                 moveFrom: req.body.moveFrom
             }
-        }, function(err, result) {
+        }, function (err, result) {
             if (err) {
                 res.status(400).json({'error': err.message});
             } else {

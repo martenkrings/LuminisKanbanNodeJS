@@ -188,11 +188,13 @@ newBoard1.save(function(err, board){
         manageStories: true
     });
     var newBoardAdmin = Role ({
-        boardId: role._id,
+        boardId: board._id,
         name: 'Board Admin',
         manageStories: true,
         moveFrom: columns
     });
+
+    var columns = [];
 
     newColumn1.save(function(columnErr, column) {
         if (columnErr) {
@@ -237,9 +239,11 @@ newBoard1.save(function(err, board){
                     });
                 }
             });
+
+            columns.push(column._id);
         }
     });
-    newColumn2.save(function(err) {
+    newColumn2.save(function(err, column) {
         if (err) {
             console.log(err.message)
         } else {
@@ -282,9 +286,11 @@ newBoard1.save(function(err, board){
                     });
                 }
             });
+
+            columns.push(column._id);
         }
     });
-    newColumn3.save(function(err) {
+    newColumn3.save(function(err, column) {
         if (err) {
             console.log(err.message)
         } else {
@@ -327,9 +333,11 @@ newBoard1.save(function(err, board){
                     });
                 }
             });
+            columns.push(column._id);
         }
     });
-    newColumn4.save(function(err) {
+
+    newColumn4.save(function(err, column) {
         if (err) {
             console.log(err.message)
         } else {
@@ -372,6 +380,7 @@ newBoard1.save(function(err, board){
                     });
                 }
             });
+            columns.push(column._id);
         }
     });
 
@@ -395,7 +404,7 @@ newBoard1.save(function(err, board){
         if (userErr) {
             console.log(err.message)
         } else {
-            Role.FindOne({boardId: board._id, name: 'Observer'}, function (roleErr, role) {
+            Role.findOne({boardId: board._id, name: 'Observer'}, function (roleErr, role) {
                 if (roleErr) {
                     console.log(err.message)
                 } else {
@@ -418,7 +427,7 @@ newBoard1.save(function(err, board){
         if (userErr) {
             console.log(err.message)
         } else {
-            Role.FindOne({boardId: board._id, name: 'Product Owner'}, function (roleErr, role) {
+            Role.findOne({boardId: board._id, name: 'Product Owner'}, function (roleErr, role) {
                 if (roleErr) {
                     console.log(err.message)
                 } else {
@@ -441,7 +450,7 @@ newBoard1.save(function(err, board){
         if (userErr) {
             console.log(err.message)
         } else {
-            Role.FindOne({boardId: board._id, name: 'Board Admin'}, function (roleErr, role) {
+            Role.findOne({boardId: board._id, name: 'Board Admin'}, function (roleErr, role) {
                 if (roleErr) {
                     console.log(err.message)
                 } else {
@@ -463,305 +472,305 @@ newBoard1.save(function(err, board){
 
     console.log('Board1 created')
 });
-newBoard2.save(function(err, board){
-    var newColumn1 = Column ({
-        boardId: board._id,
-        name: 'Backlog',
-        position: 0,
-        wipLimit: 0
-    });
-    var newColumn2 = Column ({
-        boardId: board._id,
-        name: 'To-Do',
-        position: 1,
-        wipLimit: 0
-    });
-    var newColumn3 = Column ({
-        boardId: board._id,
-        name: 'In Progress',
-        position: 2,
-        wipLimit: 0
-    });
-    var newColumn4 = Column ({
-        boardId: board._id,
-        name: 'Done',
-        position: 3,
-        wipLimit: 0
-    });
-
-    var newObserver = Role ({
-        boardId: board._id,
-        name: 'Observer'
-    });
-    var newProductOwner = Role ({
-        boardId: board._id,
-        name: 'Product Owner',
-        manageStories: true
-    });
-    var newBoardAdmin = Role ({
-        boardId: role._id,
-        name: 'Board Admin',
-        manageStories: true,
-        moveFrom: columns
-    });
-
-    newColumn1.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newColumn2.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newColumn3.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newColumn4.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-
-    newObserver.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newProductOwner.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newBoardAdmin.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-
-    User.findOne({username: 'jelmer'}, function(userErr, user) {
-        if (userErr) {
-            console.log(err.message)
-        } else {
-            Role.FindOne({boardId: board._id, name: 'Observer'}, function (roleErr, role) {
-                if (roleErr) {
-                    console.log(err.message)
-                } else {
-                    var newRoleToUser = RoleToUser ({
-                        userId: user._id,
-                        boardId: board._id,
-                        roleId: role._id
-                    });
-
-                    newRoleToUser.save(function() {
-                        if (err) {
-                            console.log(err.message)
-                        }
-                    })
-                }
-            })
-        }
-    });
-    User.findOne({username: 'bastiaan'}, function(userErr, user) {
-        if (userErr) {
-            console.log(err.message)
-        } else {
-            Role.FindOne({boardId: board._id, name: 'Product Owner'}, function (roleErr, role) {
-                if (roleErr) {
-                    console.log(err.message)
-                } else {
-                    var newRoleToUser = RoleToUser ({
-                        userId: user._id,
-                        boardId: board._id,
-                        roleId: role._id
-                    });
-
-                    newRoleToUser.save(function() {
-                        if (err) {
-                            console.log(err.message)
-                        }
-                    })
-                }
-            })
-        }
-    });
-    User.findOne({username: 'marten'}, function(userErr, user) {
-        if (userErr) {
-            console.log(err.message)
-        } else {
-            Role.FindOne({boardId: board._id, name: 'Board Admin'}, function (roleErr, role) {
-                if (roleErr) {
-                    console.log(err.message)
-                } else {
-                    var newRoleToUser = RoleToUser ({
-                        userId: user._id,
-                        boardId: board._id,
-                        roleId: role._id
-                    });
-
-                    newRoleToUser.save(function() {
-                        if (err) {
-                            console.log(err.message)
-                        }
-                    })
-                }
-            })
-        }
-    });
-
-    console.log('Board2 created')
-});
-newBoard3.save(function(err, board){
-    var newColumn1 = Column ({
-        boardId: board._id,
-        name: 'Backlog',
-        position: 0,
-        wipLimit: 0
-    });
-    var newColumn2 = Column ({
-        boardId: board._id,
-        name: 'To-Do',
-        position: 1,
-        wipLimit: 0
-    });
-    var newColumn3 = Column ({
-        boardId: board._id,
-        name: 'In Progress',
-        position: 2,
-        wipLimit: 0
-    });
-    var newColumn4 = Column ({
-        boardId: board._id,
-        name: 'Done',
-        position: 3,
-        wipLimit: 0
-    });
-
-    var newObserver = Role ({
-        boardId: board._id,
-        name: 'Observer'
-    });
-    var newProductOwner = Role ({
-        boardId: board._id,
-        name: 'Product Owner',
-        manageStories: true
-    });
-    var newBoardAdmin = Role ({
-        boardId: role._id,
-        name: 'Board Admin',
-        manageStories: true,
-        moveFrom: columns
-    });
-
-    newColumn1.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newColumn2.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newColumn3.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newColumn4.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-
-    newObserver.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newProductOwner.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-    newBoardAdmin.save(function(err) {
-        if (err) {
-            console.log(err.message)
-        }
-    });
-
-    User.findOne({username: 'bastiaan'}, function(userErr, user) {
-        if (userErr) {
-            console.log(err.message)
-        } else {
-            Role.FindOne({boardId: board._id, name: 'Observer'}, function (roleErr, role) {
-                if (roleErr) {
-                    console.log(err.message)
-                } else {
-                    var newRoleToUser = RoleToUser ({
-                        userId: user._id,
-                        boardId: board._id,
-                        roleId: role._id
-                    });
-
-                    newRoleToUser.save(function() {
-                        if (err) {
-                            console.log(err.message)
-                        }
-                    })
-                }
-            })
-        }
-    });
-    User.findOne({username: 'marten'}, function(userErr, user) {
-        if (userErr) {
-            console.log(err.message)
-        } else {
-            Role.FindOne({boardId: board._id, name: 'Product Owner'}, function (roleErr, role) {
-                if (roleErr) {
-                    console.log(err.message)
-                } else {
-                    var newRoleToUser = RoleToUser ({
-                        userId: user._id,
-                        boardId: board._id,
-                        roleId: role._id
-                    });
-
-                    newRoleToUser.save(function() {
-                        if (err) {
-                            console.log(err.message)
-                        }
-                    })
-                }
-            })
-        }
-    });
-    User.findOne({username: 'sander'}, function(userErr, user) {
-        if (userErr) {
-            console.log(err.message)
-        } else {
-            Role.FindOne({boardId: board._id, name: 'Board Admin'}, function (roleErr, role) {
-                if (roleErr) {
-                    console.log(err.message)
-                } else {
-                    var newRoleToUser = RoleToUser ({
-                        userId: user._id,
-                        boardId: board._id,
-                        roleId: role._id
-                    });
-
-                    newRoleToUser.save(function() {
-                        if (err) {
-                            console.log(err.message)
-                        }
-                    })
-                }
-            })
-        }
-    });
-
-    console.log('Board3 created')
-});
+// newBoard2.save(function(err, board){
+//     var newColumn1 = Column ({
+//         boardId: board._id,
+//         name: 'Backlog',
+//         position: 0,
+//         wipLimit: 0
+//     });
+//     var newColumn2 = Column ({
+//         boardId: board._id,
+//         name: 'To-Do',
+//         position: 1,
+//         wipLimit: 0
+//     });
+//     var newColumn3 = Column ({
+//         boardId: board._id,
+//         name: 'In Progress',
+//         position: 2,
+//         wipLimit: 0
+//     });
+//     var newColumn4 = Column ({
+//         boardId: board._id,
+//         name: 'Done',
+//         position: 3,
+//         wipLimit: 0
+//     });
+//
+//     var newObserver = Role ({
+//         boardId: board._id,
+//         name: 'Observer'
+//     });
+//     var newProductOwner = Role ({
+//         boardId: board._id,
+//         name: 'Product Owner',
+//         manageStories: true
+//     });
+//     var newBoardAdmin = Role ({
+//         boardId: role._id,
+//         name: 'Board Admin',
+//         manageStories: true,
+//         moveFrom: columns
+//     });
+//
+//     newColumn1.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newColumn2.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newColumn3.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newColumn4.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//
+//     newObserver.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newProductOwner.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newBoardAdmin.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//
+//     User.findOne({username: 'jelmer'}, function(userErr, user) {
+//         if (userErr) {
+//             console.log(err.message)
+//         } else {
+//             Role.FindOne({boardId: board._id, name: 'Observer'}, function (roleErr, role) {
+//                 if (roleErr) {
+//                     console.log(err.message)
+//                 } else {
+//                     var newRoleToUser = RoleToUser ({
+//                         userId: user._id,
+//                         boardId: board._id,
+//                         roleId: role._id
+//                     });
+//
+//                     newRoleToUser.save(function() {
+//                         if (err) {
+//                             console.log(err.message)
+//                         }
+//                     })
+//                 }
+//             })
+//         }
+//     });
+//     User.findOne({username: 'bastiaan'}, function(userErr, user) {
+//         if (userErr) {
+//             console.log(err.message)
+//         } else {
+//             Role.FindOne({boardId: board._id, name: 'Product Owner'}, function (roleErr, role) {
+//                 if (roleErr) {
+//                     console.log(err.message)
+//                 } else {
+//                     var newRoleToUser = RoleToUser ({
+//                         userId: user._id,
+//                         boardId: board._id,
+//                         roleId: role._id
+//                     });
+//
+//                     newRoleToUser.save(function() {
+//                         if (err) {
+//                             console.log(err.message)
+//                         }
+//                     })
+//                 }
+//             })
+//         }
+//     });
+//     User.findOne({username: 'marten'}, function(userErr, user) {
+//         if (userErr) {
+//             console.log(err.message)
+//         } else {
+//             Role.FindOne({boardId: board._id, name: 'Board Admin'}, function (roleErr, role) {
+//                 if (roleErr) {
+//                     console.log(err.message)
+//                 } else {
+//                     var newRoleToUser = RoleToUser ({
+//                         userId: user._id,
+//                         boardId: board._id,
+//                         roleId: role._id
+//                     });
+//
+//                     newRoleToUser.save(function() {
+//                         if (err) {
+//                             console.log(err.message)
+//                         }
+//                     })
+//                 }
+//             })
+//         }
+//     });
+//
+//     console.log('Board2 created')
+// });
+// newBoard3.save(function(err, board){
+//     var newColumn1 = Column ({
+//         boardId: board._id,
+//         name: 'Backlog',
+//         position: 0,
+//         wipLimit: 0
+//     });
+//     var newColumn2 = Column ({
+//         boardId: board._id,
+//         name: 'To-Do',
+//         position: 1,
+//         wipLimit: 0
+//     });
+//     var newColumn3 = Column ({
+//         boardId: board._id,
+//         name: 'In Progress',
+//         position: 2,
+//         wipLimit: 0
+//     });
+//     var newColumn4 = Column ({
+//         boardId: board._id,
+//         name: 'Done',
+//         position: 3,
+//         wipLimit: 0
+//     });
+//
+//     var newObserver = Role ({
+//         boardId: board._id,
+//         name: 'Observer'
+//     });
+//     var newProductOwner = Role ({
+//         boardId: board._id,
+//         name: 'Product Owner',
+//         manageStories: true
+//     });
+//     var newBoardAdmin = Role ({
+//         boardId: role._id,
+//         name: 'Board Admin',
+//         manageStories: true,
+//         moveFrom: columns
+//     });
+//
+//     newColumn1.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newColumn2.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newColumn3.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newColumn4.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//
+//     newObserver.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newProductOwner.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//     newBoardAdmin.save(function(err) {
+//         if (err) {
+//             console.log(err.message)
+//         }
+//     });
+//
+//     User.findOne({username: 'bastiaan'}, function(userErr, user) {
+//         if (userErr) {
+//             console.log(err.message)
+//         } else {
+//             Role.FindOne({boardId: board._id, name: 'Observer'}, function (roleErr, role) {
+//                 if (roleErr) {
+//                     console.log(err.message)
+//                 } else {
+//                     var newRoleToUser = RoleToUser ({
+//                         userId: user._id,
+//                         boardId: board._id,
+//                         roleId: role._id
+//                     });
+//
+//                     newRoleToUser.save(function() {
+//                         if (err) {
+//                             console.log(err.message)
+//                         }
+//                     })
+//                 }
+//             })
+//         }
+//     });
+//     User.findOne({username: 'marten'}, function(userErr, user) {
+//         if (userErr) {
+//             console.log(err.message)
+//         } else {
+//             Role.FindOne({boardId: board._id, name: 'Product Owner'}, function (roleErr, role) {
+//                 if (roleErr) {
+//                     console.log(err.message)
+//                 } else {
+//                     var newRoleToUser = RoleToUser ({
+//                         userId: user._id,
+//                         boardId: board._id,
+//                         roleId: role._id
+//                     });
+//
+//                     newRoleToUser.save(function() {
+//                         if (err) {
+//                             console.log(err.message)
+//                         }
+//                     })
+//                 }
+//             })
+//         }
+//     });
+//     User.findOne({username: 'sander'}, function(userErr, user) {
+//         if (userErr) {
+//             console.log(err.message)
+//         } else {
+//             Role.FindOne({boardId: board._id, name: 'Board Admin'}, function (roleErr, role) {
+//                 if (roleErr) {
+//                     console.log(err.message)
+//                 } else {
+//                     var newRoleToUser = RoleToUser ({
+//                         userId: user._id,
+//                         boardId: board._id,
+//                         roleId: role._id
+//                     });
+//
+//                     newRoleToUser.save(function() {
+//                         if (err) {
+//                             console.log(err.message)
+//                         }
+//                     })
+//                 }
+//             })
+//         }
+//     });
+//
+//     console.log('Board3 created')
+// });
