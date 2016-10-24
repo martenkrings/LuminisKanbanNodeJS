@@ -127,9 +127,10 @@ router.get('/all', function (req, res) {
 /**
  * Get specific board by id
  */
-router.get('/:boardid', function (req, res) {
+router.get('/:boardId', function (req, res) {
 
     var token = req.header("token");
+    var boardId = req.params.boardId;
 
     if (!token) {
         return res.status(401).json({error: 'No token provided, abandon ship!'});
@@ -144,18 +145,18 @@ router.get('/:boardid', function (req, res) {
         User.findOne({username: decoded.username}, function (err, user) {
 
             if (err) {
-                return res.status(500).json({error: 'Server error'});
+                return res.status(500).json({error: 'Server error, user error.'});
             }
 
             if (!user) {
                 return res.status(404).json({error: 'User not found.'});
             }
 
-            if (user.isAdmin == false) {
-                return res.status(401).json({error: 'Forbidden'});
-            }
+            // if (user.isAdmin == false) {
+            //     return res.status(401).json({error: 'Forbidden'});
+            // }
 
-            RoleToUser.find({userId: user._id, boardId: req.params.boardid}, function (err, roleResult) {
+            RoleToUser.find({'userId': user._id, 'boardId': boardId}, function (err, roleResult) {
 
                 if (err) {
                     return res.status(400).json({error: 'Bad Request'});
@@ -165,47 +166,55 @@ router.get('/:boardid', function (req, res) {
                     return res.status(404).json({error: 'No permissions found.'});
                 }
 
-                if (!roleResult.length) {
-                    return res.status(401).json({error: 'Forbidden'});
-                }
+                // if (!roleResult.length) {
+                //     return res.status(401).json({error: 'Forbidden'});
+                // }
 
-                Board.findOne({_id: req.params.boardId}, function (boardErr, boardResult) {
+                Board.findOne({'_id': boardId}, function (boardErr, boardResult) {
 
                     if (boardErr) {
-                        return res.status(500).json({error: 'Server error'});
+                        return res.status(500).json({error: boardErr.message});
                     }
 
                     if (!boardResult) {
                         return res.status(404).json({error: 'Board not found.'});
                     }
 
-                    Column.find({boardId: boardResult._id}, function (columnErr, columnResult) {
+                    Column.find({'boardId': boardResult._id}, function (columnErr, columnResult) {
 
                         if (columnErr) {
-                            return res.status(500).json({error: 'Server error'});
+                            return res.status(500).json({error: 'Server error, column error.'});
                         }
 
                         if (!columnResult) {
                             return res.status(404).json({error: 'Columns not found.'})
                         }
 
-                        var stories = [];
 
-                        for (var i = 0; i < columnResult.length; i++) {
 
-                            stories.push(Story.find({columnId: columnResult[i]._id}, function (storyErr) {
+                        Story.find({}, function (storyErr, stories) {
+                            console.log(stories);
+                            var storiesResult = [];
 
-                                if (storyErr) {
-                                    return res.status(500).json({error: 'Server error'});
+                            if (storyErr) {
+                                return res.status(500).json({error: 'Server error, story error.'});
+                            }
+
+                            for (var i = 0; i < stories.length; i++) {
+
+                                for (var j = 0; j < columnResult.length; j++) {
+
+                                    if (stories[i].columnId == columnResult[j]._id) {
+                                        storiesResult.push(stories[i]);
+                                    }
                                 }
 
-                            }))
-                        }
+                            }
+                            var result = {'board': boardResult, 'columns': columnResult, 'stories': storiesResult};
 
-                        var result = [boardResult, columnResult, stories];
+                            res.status(200).json(result);
 
-                        res.status(200).json(result);
-
+                        });
                     });
 
                 });
