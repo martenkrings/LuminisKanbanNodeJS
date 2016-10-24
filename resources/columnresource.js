@@ -6,130 +6,153 @@ var router = express.Router();
 var jwt = require('jsonwebtoken');
 var Column = require('../model/column.js');
 
-router.get('/:boardid', function (req, res) {
-    var token = req.header("token");
-    jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
-        if (err) {
-            res.status(401).json({error: 'Forbidden'});
-        }
-    });
-
-    Column.find({boardId: req.params.boardid}, function (err, result) {
-        if (err) {
-            res.status(400).json({error: 'Bad Request'});
-        } else {
-            res.status(200).json(result);
-        }
-    })
-});
-
 router.post('/delete', function (req, res) {
+
     var token = req.header("token");
+
+    if (!token) {
+        return res.status(401).json({error: 'No token provided, abandon ship!'});
+    }
+
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+
+        if (err) {
+            return res.status(401).json({error: 'Forbidden'});
+        }
+
+        User.findOne({username: decoded.username}, function (err, user) {
             if (err) {
-                res.status(401).json({error: 'Forbidden'});
-            } else {
-                User.findOne({username: decoded.username}, function (err, user) {
-                    if (err) {
-                        res.status(400).json({error: 'Bad Request'});
-                    } else if (!user.isAdmin) {
-                        res.status(401).json({error: 'Forbidden'});
-                    }
-                });
+                return res.status(500).json({error: 'Server error.'});
             }
+
+            if (!user) {
+                return res.status(404).json({error: 'User not found.'})
+            }
+
+            if (!user.isAdmin) {
+                return res.status(401).json({error: 'Forbidden'});
+            }
+
             Column.remove({_id: req.body.columnId}, function (err) {
                 if (err) {
                     res.status(400).json({error: 'Bad Request'});
                 } else {
                     res.status(204)
                 }
-            })
-        }
-    )
+            });
+        });
+    });
 });
 
 /**
  * Edit column name and wip limit by columnid
  */
-router.post('/editcolumn', function(req, res) {
-    if (err) {
-        res.status(401).json({error: 'Forbidden'});
-    } else {
-        User.findOne({username: decoded.username}, function (err, user) {
-            if (err) {
-                res.status(400).json({error: 'Bad Request'});
-                RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
-                    if (err) {
-                        res.status(400).json({error: 'Bad Request'});
-                    } else if (roleResult.length > 0) {
-                        res.status(401).json({error: 'Forbidden'});
-                    }
-                });
-            }
-        });
+router.post('/editcolumn', function (req, res) {
+    var token = req.header("token");
+
+    if (!token) {
+        return res.status(401).json({error: 'No token provided, abandon ship!'});
     }
 
-    Column.update({_id: req.body._id}, {'$set': {name: req.body.name, wipLimit: req.body.wipLimit}}, function(err, result) {
+    jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+
         if (err) {
-            res.status(400).json({'error': err.message});
-        } else {
-            res.status(200).send(result);
+            return res.status(401).json({error: 'Forbidden'});
         }
-    })
+
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                return res.status(500).json({error: 'Server error.'});
+            }
+
+            if (!user) {
+                return res.status(404).json({error: 'User not found.'})
+            }
+
+            if (!user.isAdmin) {
+                return res.status(401).json({error: 'Forbidden'});
+            }
+
+            Column.update({_id: req.body._id}, {
+                '$set': {
+                    name: req.body.name,
+                    wipLimit: req.body.wipLimit
+                }
+            }, function (err, result) {
+                if (err) {
+                    res.status(400).json({'error': err.message});
+                } else {
+                    res.status(200).send(result);
+                }
+            });
+        });
+    });
 });
 
 /**
  * Create a new Column
  */
-router.post('/addcolumn', function(req, res) {
-    if (err) {
-        res.status(401).json({error: 'Forbidden'});
-    } else {
-        User.findOne({username: decoded.username}, function (err, user) {
-            if (err) {
-                res.status(400).json({error: 'Bad Request'});
-                RoleToUser.find({userId: user._id, boardId: req.params.boardId}, function (err, roleResult) {
-                    if (err) {
-                        res.status(400).json({error: 'Bad Request'});
-                    } else if (roleResult.length > 0) {
-                        res.status(401).json({error: 'Forbidden'});
-                    }
-                });
-            }
-        });
+router.post('/addcolumn', function (req, res) {
+    var token = req.header("token");
+
+    if (!token) {
+        return res.status(401).json({error: 'No token provided, abandon ship!'});
     }
 
-    var newColumn = Column ({
-        BoardId: req.body.boardId,
-        name: req.body.name,
-        position: req.body.position,
-        wipLlimit: req.body.wipLimit
-    });
+    jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
 
-    Column.find({boardId: req.body.boardId}, function(err, columnsResult) {
         if (err) {
-            res.status(400).json({error: 'Bad Request'});
-        } else {
-            for (var i = 0; i < columnsResult.length; i++) {
-                if (columnsResult[i].position >= req.body.position) {
-                    Column.update({_id: columnsResult[i]._id}, {'$set': {position: columnsResult[i].position + 1}}, function(updateErr) {
-                        if (err) {
-                            res.status(400).json({error: 'Bad Request'});
-                        }
-                    })
-                }
+            return res.status(401).json({error: 'Forbidden'});
+        }
+
+        User.findOne({username: decoded.username}, function (err, user) {
+            if (err) {
+                return res.status(500).json({error: 'Server error.'});
             }
-        }
+
+            if (!user) {
+                return res.status(404).json({error: 'User not found.'})
+            }
+
+            if (!user.isAdmin) {
+                return res.status(401).json({error: 'Forbidden'});
+            }
+
+            var newColumn = Column({
+                BoardId: req.body.boardId,
+                name: req.body.name,
+                position: req.body.position,
+                wipLlimit: req.body.wipLimit
+            });
+
+            Column.find({boardId: req.body.boardId}, function (err, columnsResult) {
+
+                if (err) {
+                    return res.status(500).json({error: 'Server error.'});
+                }
+
+                for (var i = 0; i < columnsResult.length; i++) {
+
+                    if (columnsResult[i].position >= req.body.position) {
+
+                        Column.update({_id: columnsResult[i]._id}, {'$set': {position: columnsResult[i].position + 1}}, function (updateErr) {
+
+                            if (updateErr) {
+                                res.status(400).json({error: 'Bad Request'});
+                            }
+                        });
+                    }
+                }
+
+                newColumn.save(function (err, result) {
+                    if (err) {
+                        return res.status(500).json({error: 'Server error.'});
+                    }
+                    res.status(201).json({edit: result});
+                });
+            });
+        });
     });
-
-    newColumn.save(function() {
-        if (err) {
-            res.status(400).json({'error': err.message});
-            return
-        }
-        res.status(201).json();
-    })
-
 });
 
 module.exports = router;
