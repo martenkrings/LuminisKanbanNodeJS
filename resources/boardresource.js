@@ -72,10 +72,9 @@ router.get('/', function (req, res) {
                     }
                     res.status(200).json({boards: resultBoards});
                 });
-            })
+            });
         });
-
-    })
+    });
 });
 
 /**
@@ -107,20 +106,20 @@ router.get('/all', function (req, res) {
             if (!user.isAdmin) {
                 return res.status(401).json({error: 'Forbidden'});
             }
+
+            Board.find({}, {title: true, description: true, dateCreated: true}, function (err, result) {
+                if (err) {
+                    return res.status(500).json({error: 'Server error.'});
+                }
+
+                if (!result.length) {
+                    return res.status(404).json({error: 'No boards found.'})
+                }
+
+                res.status(200).json({boards: result});
+
+            });
         });
-    });
-
-    Board.find({}, {title: true, description: true, dateCreated: true}, function (err, result) {
-        if (err) {
-            return res.status(500).json({error: 'Server error.'});
-        }
-
-        if (!result.length) {
-            return res.status(404).json({error: 'No boards found.'})
-        }
-
-        res.status(200).json({boards: result});
-
     });
 });
 
@@ -152,23 +151,19 @@ router.get('/:boardId', function (req, res) {
                 return res.status(404).json({error: 'User not found.'});
             }
 
-            // if (user.isAdmin == false) {
-            //     return res.status(401).json({error: 'Forbidden'});
-            // }
-
-            RoleToUser.find({'userId': user._id, 'boardId': boardId}, function (err, roleResult) {
+            RoleToUser.find({'userId': user._id, 'boardId': boardId}, function (err, relationResult) {
 
                 if (err) {
                     return res.status(400).json({error: 'Bad Request'});
                 }
 
-                if (!roleResult) {
+                if (! relationResult) {
                     return res.status(404).json({error: 'No permissions found.'});
                 }
 
-                // if (!roleResult.length) {
-                //     return res.status(401).json({error: 'Forbidden'});
-                // }
+                if (! relationResult.length) {
+                    return res.status(401).json({error: 'Forbidden'});
+                }
 
                 Board.findOne({'_id': boardId}, function (boardErr, boardResult) {
 
@@ -216,12 +211,9 @@ router.get('/:boardId', function (req, res) {
 
                         });
                     });
-
                 });
-
             });
         });
-
     });
 });
 
@@ -254,23 +246,23 @@ router.post('/edit', function (req, res) {
             if (!user.isAdmin) {
                 return res.status(401).json({error: 'Forbidden'});
             }
+
+            Board.update({_id: req.body._id}, {
+                '$set': {
+                    title: req.body.title,
+                    description: req.body.description
+                }
+            }, function (err, result) {
+
+                if (err) {
+                    return res.status(500).json({error: 'Server error.'});
+                }
+
+                res.status(200).send(result);
+
+            });
         });
     });
-
-    Board.update({_id: req.body._id}, {
-        '$set': {
-            title: req.body.title,
-            description: req.body.description
-        }
-    }, function (err, result) {
-
-        if (err) {
-            return res.status(500).json({error: 'Server error.'});
-        }
-
-        res.status(200).send(result);
-
-    })
 });
 
 /**
@@ -302,123 +294,112 @@ router.post('/new', function (req, res) {
             if (!user.isAdmin) {
                 return res.status(401).json({error: 'Forbidden'});
             }
-        });
-    });
 
-    var newBoard = Board({
-        title: req.body.title,
-        description: req.body.description,
-        dateCreated: Date.now()
-    });
-
-    newBoard.save(function (err, result) {
-
-        if (err) {
-            return res.status(500).json({error: 'Server error.'});
-        }
-
-        for (var i = 0; i < req.body.columns; i++) {
-            var newColumn = Column({
-                boardId: result._id,
-                name: req.body.columns[i].name,
-                position: req.body.columns[i].position,
-                wipLimit: req.body.columns[i].wipLimit
+            var newBoard = Board({
+                title: req.body.title,
+                description: req.body.description,
+                dateCreated: Date.now()
             });
 
-            newColumn.save()
-        }
-        var newBacklog = Column({
-            boardId: result._id,
-            name: 'Backlog',
-            position: 0,
-            wipLimit: 0
-        });
-        var newToDo = Column({
-            boardId: result._id,
-            name: 'To-Do',
-            position: 1,
-            wipLimit: 0
-        });
-        var newInProgress = Column({
-            boardId: result._id,
-            name: 'In Progress',
-            position: 2,
-            wipLimit: 0
-        });
-        var newDone = Column({
-            boardId: result._id,
-            name: 'Done',
-            position: 3,
-            wipLimit: 0
-        });
-        newBacklog.save(columnSaveHandler(err, columnResult));
-        newToDo.save(columnSaveHandler(err, columnResult));
-        newInProgress.save(columnSaveHandler(err, columnResult));
-        newDone.save(columnSaveHandler(err, columnResult));
+            newBoard.save(function (err, result) {
 
-        var newObserver = Role({
-            boardId: result._id,
-            name: 'Observer'
+                if (err) {
+                    return res.status(500).json({error: 'Server error.'});
+                }
+
+                for (var i = 0; i < req.body.columns; i++) {
+
+                    var newColumn = Column({
+                        boardId: result._id,
+                        name: req.body.columns[i].name,
+                        position: req.body.columns[i].position,
+                        wipLimit: req.body.columns[i].wipLimit
+                    });
+
+                    newColumn.save(function (err) {
+                        return res.status(500).json({error: 'Server error.'});
+                    });
+
+                }
+
+                Column.find({boardId: result._id}, function (columnErr, columns) {
+
+                    if (columnErr) {
+                        return res.status(500).json({error: 'Server error.'});
+                    }
+
+                    for (var j = 0; j < req.body.roles; j++) {
+                        var newRole = Role({
+                            boardId: result._id,
+                            name: req.body[j].name,
+                            manageStories: req.body.manageStories,
+                            moveFrom: []
+                        });
+
+                        for (var k = 0; k < req.body.moveFrom.length; k++) {
+
+                            for (var l = 0; l < columns.length; l++) {
+
+                                if (req.body.moveFrom[k].name == columns[l].name) {
+                                    newRole.moveFrom.push()
+                                }
+                            }
+                        }
+                    }
+
+                    res.status(201).json(result._id);
+
+                });
+            });
         });
-        var newProductOwner = Role({
-            boardId: result._id,
-            name: 'Product Owner',
-            manageStories: true
-        });
-        var newBoardAdmin = Role({
-            boardId: result._id,
-            name: 'Board Admin',
-            manageStories: true,
-        });
-
-        var roleSaveHandler = function (err, roleresult) {
-            if (err) {
-                res.status(400).json({'error': err.message});
-            }
-        };
-
-        newObserver.save(roleSaveHandler(err))
-        newProductOwner.save(roleSaveHandler(err))
-        newBoardAdmin.save(roleSaveHandler(err))
-
-        res.status(201).json(result._id);
-    })
-
-
+    });
 });
 
 /**
  * Create a new role
  */
 router.post('/addrole', function (req, res) {
+
     var token = req.header("token");
+
+    if (!token) {
+        return res.status(401).json({error: 'No token provided, abandon ship!'});
+    }
+
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+
         if (err) {
-            res.status(401).json({error: 'Forbidden'});
-        } else {
-            User.findOne({username: decoded.username}, function (err, user) {
-                if (err) {
-                    res.status(400).json({error: 'Bad Request'});
-                } else if (!user.isAdmin) {
-                    res.status(401).json({error: 'Forbidden'});
-                }
-            });
+            return res.status(401).json({error: 'Forbidden'});
         }
 
-        var newRole = Role({
-            boardId: req.body.boardId,
-            name: req.body.name,
-            manageStories: req.body.manageStories,
-            moveFrom: req.body.moveFrom
-        });
-
-        newRole.save(function () {
+        User.findOne({username: decoded.username}, function (err, user) {
             if (err) {
-                res.status(400).json({'error': err.message});
-                return
+                return res.status(500).json({error: 'Server error.'});
             }
-            res.status(201).json();
-        })
+
+            if (!user) {
+                return res.status(404).json({error: 'User not found.'})
+            }
+
+            if (!user.isAdmin) {
+                return res.status(401).json({error: 'Forbidden'});
+            }
+
+            var newRole = Role({
+                boardId: req.body.boardId,
+                name: req.body.name,
+                manageStories: req.body.manageStories,
+                moveFrom: req.body.moveFrom
+            });
+
+            newRole.save(function () {
+                if (err) {
+                    res.status(400).json({'error': err.message});
+                    return
+                }
+                res.status(201).json();
+            });
+        });
     });
 });
 
