@@ -100,9 +100,9 @@ var newUser4 = User ({
 //Save users to database
 newAdmin.save(function(err){
     if (err) {
-        console.log(err.message)
+        console.log(err.message);
     } else {
-        console.log('Admin created')
+        console.log('Admin created');
     }
 });
 newUser1.save(function(err){
