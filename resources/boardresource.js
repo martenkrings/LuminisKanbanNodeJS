@@ -341,13 +341,19 @@ router.post('/new', function (req, res) {
                             for (var l = 0; l < columns.length; l++) {
 
                                 if (req.body.moveFrom[k].name == columns[l].name) {
-                                    newRole.moveFrom.push()
+                                    newRole.moveFrom.push(columns[l]._id);
                                 }
                             }
                         }
+
+                        newRole.save (function(err) {
+                            if (err) {
+                                return res.status(500).json({error: 'Error saving role'})
+                            }
+                        });
                     }
 
-                    res.status(201).json(result._id);
+                    res.status(201).json({newBoard: result});
 
                 });
             });
