@@ -157,11 +157,11 @@ router.get('/:boardId', function (req, res) {
                     return res.status(400).json({error: 'Bad Request'});
                 }
 
-                if (! relationResult) {
+                if (!relationResult) {
                     return res.status(404).json({error: 'No permissions found.'});
                 }
 
-                if (! relationResult.length) {
+                if (!relationResult.length) {
                     return res.status(401).json({error: 'Forbidden'});
                 }
 
@@ -184,7 +184,6 @@ router.get('/:boardId', function (req, res) {
                         if (!columnResult) {
                             return res.status(404).json({error: 'Columns not found.'})
                         }
-
 
 
                         Story.find({}, function (storyErr, stories) {
@@ -394,8 +393,7 @@ router.post('/addrole', function (req, res) {
 
             newRole.save(function () {
                 if (err) {
-                    res.status(400).json({'error': err.message});
-                    return
+                    return res.status(500).json({error: 'Server error.'});
                 }
                 res.status(201).json();
             });
@@ -407,33 +405,45 @@ router.post('/addrole', function (req, res) {
  * Edit a role
  */
 router.post('/editrole', function (req, res) {
+
     var token = req.header("token");
+
+    if (!token) {
+        return res.status(401).json({error: 'No token provided, abandon ship!'});
+    }
+
     jwt.verify(token, req.app.get('private-key'), function (err, decoded) {
+
         if (err) {
-            res.status(401).json({error: 'Forbidden'});
-        } else {
-            User.findOne({username: decoded.username}, function (err, user) {
-                if (err) {
-                    res.status(400).json({error: 'Bad Request'});
-                } else if (!user.isAdmin) {
-                    res.status(401).json({error: 'Forbidden'});
-                }
-            });
+            return res.status(401).json({error: 'Forbidden'});
         }
 
-        Role.update({_id: req.body.roleId}, {
-            '$set': {
-                name: req.body.name,
-                manageStories: req.body.manageStories,
-                moveFrom: req.body.moveFrom
-            }
-        }, function (err, result) {
+        User.findOne({username: decoded.username}, function (err, user) {
             if (err) {
-                res.status(400).json({'error': err.message});
-            } else {
-                res.status(200).send(result);
+                return res.status(500).json({error: 'Server error.'});
             }
-        })
+
+            if (!user) {
+                return res.status(404).json({error: 'User not found.'})
+            }
+
+            if (!user.isAdmin) {
+                return res.status(401).json({error: 'Forbidden'});
+            }
+
+            Role.update({_id: req.body.roleId}, {
+                '$set': {
+                    name: req.body.name,
+                    manageStories: req.body.manageStories,
+                    moveFrom: req.body.moveFrom
+                }
+            }, function (err, result) {
+                if (err) {
+                    return res.status(500).json({error: 'Server error.'});
+                }
+                res.status(200).send(result);
+            });
+        });
     });
 });
 
