@@ -187,12 +187,6 @@ newBoard1.save(function(err, board){
         name: 'Product Owner',
         manageStories: true
     });
-    var newBoardAdmin = Role ({
-        boardId: board._id,
-        name: 'Board Admin',
-        manageStories: true,
-        moveFrom: columns
-    });
 
     var columns = [];
 
@@ -382,6 +376,13 @@ newBoard1.save(function(err, board){
             });
             columns.push(column._id);
         }
+    });
+
+    var newBoardAdmin = Role ({
+        boardId: board._id,
+        name: 'Board Admin',
+        manageStories: true,
+        moveFrom: columns
     });
 
     newObserver.save(function(err) {

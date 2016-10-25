@@ -190,7 +190,6 @@ router.get('/:boardId', function (req, res) {
 
 
                         Story.find({}, function (storyErr, stories) {
-                            console.log(stories);
                             var storiesResult = [];
 
                             if (storyErr) {
@@ -301,109 +300,120 @@ router.post('/new', function (req, res) {
 
             var newBoard = Board({
                 title: req.body.title,
-                description: req.body.description,
-                dateCreated: Date.now()
+                description: req.body.description
             });
 
-            console.log({board: newBoard});
-
-            newBoard.save(function (err, result) {
+            newBoard.save(function (err, board) {
 
                 if (err) {
                     return res.status(500).json({error: err.message});
                 }
 
-                for (var i = 0; i < req.body.columns; i++) {
+                var columnResults = [];
+
+                var columnsFromRequest = req.body.columns;
+
+                for (var i = 0; i < columnsFromRequest.length; i++) {
 
                     var newColumn = Column({
-                        boardId: result._id,
-                        name: req.body.columns[i].name,
-                        position: req.body.columns[i].position,
-                        wipLimit: req.body.columns[i].wipLimit
+                        boardId: board._id,
+                        name: columnsFromRequest[i].name,
+                        position: columnsFromRequest[i].position,
+                        wipLimit: columnsFromRequest[i].wipLimit
                     });
 
-                    newColumn.save(function (err) {
-
-                        if (err) {
-                            return res.status(500).json({error: 'Server error.'});
-                        }
-                    });
+                    columnResults.push(newColumn);
 
                 }
 
-                Column.find({boardId: result._id}, function (columnErr, columns) {
+                var roleResults = [];
 
-                    if (columnErr) {
-                        return res.status(500).json({error: 'Server error.'});
+                var rolesFromRequest = req.body.roles;
+
+                for (var j = 0; j < rolesFromRequest.length; j++) {
+
+                    var newRole = Role({
+                        boardId: board._id,
+                        name: rolesFromRequest[j].name,
+                        manageStories: rolesFromRequest[j].manageStories,
+                        moveFrom: []
+                    });
+
+                    for (var k = 0; k < columnResults; k++) {
+                        if (rolesFromRequest[j].name == columnResults[k].name) {
+                            newRole.moveFrom.push(columnResults[k]._id);
+                        }
                     }
 
-                    for (var j = 0; j < req.body.roles; j++) {
-                        var newRole = Role({
-                            boardId: result._id,
-                            name: req.body[j].name,
-                            manageStories: req.body.manageStories,
-                            moveFrom: []
-                        });
+                    roleResults.push(newRole);
 
-                        for (var k = 0; k < req.body.moveFrom.length; k++) {
+                }
 
-                            for (var l = 0; l < columns.length; l++) {
+                User.find({}, function (userErr, users) {
+                    if (userErr) {
+                        return res.status(500).json({error: err.message});
+                    }
 
-                                if (req.body.moveFrom[k].name == columns[l].name) {
-                                    newRole.moveFrom.push(columns[l]._id);
+                    if (!users.length) {
+                        return res.status(404).json({error: err.message});
+                    }
+
+                    var roleAssignments = [];
+
+                    var roleAssignmentsFromRequest = req.body.rolAss;
+
+                    for (var l = 0; l < users.length; l++) {
+                        for (var m = 0; m < roleAssignmentsFromRequest.length; m++) {
+                            for (var n = 0; n < roleResults.length; n++) {
+                                if (users[l].username == roleAssignmentsFromRequest[m].username && roleResults[n].name == roleAssignmentsFromRequest[m].rolName) {
+
+                                    var newRoleToUser = RoleToUser({
+                                        userId: users[l]._id,
+                                        boardId: board._id,
+                                        roleId: roleResults[n]._id
+                                    });
+
+                                    roleAssignments.push(newRoleToUser);
                                 }
                             }
                         }
-
-                        newRole.save(function (err) {
-                            if (err) {
-                                return res.status(500).json({error: 'Error saving role'})
-                            }
-                        });
                     }
 
-                    Role.find({boardId: result._id}, function (roleErr, roles) {
+                    for (var o = 0; o < columnResults.length; o++) {
 
-                        if (roleErr) {
-                            return res.status(500).json({error: 'Server error'});
-                        }
-
-                        User.find({}, function (userErr, users) {
-
-                            if (userErr) {
-                                return res.status(500).json({error: 'Server error'});
+                        columnResults[o].save(function (err) {
+                            if (err) {
+                                return res.status(500).json({error: err.message});
                             }
 
-                            if (!users.length) {
-                                 return res.status(404).json({error: 'No users found in database :('});
-                            }
+                            if (o == columnResults.length) {
 
-                            for (var i = 0; i < roles.length; i++) {
+                                for (var p = 0; p < roleResults.length; p++) {
+                                    roleResults[p].save(function (err) {
 
-                                for (var j = 0; j < users.length; j++) {
+                                        if (err) {
+                                            return res.status(500).json({error: err.message});
+                                        }
+                                    });
 
-                                    for (var k = 0; k < req.body.usernameList; k++) {
+                                    if (p == roleResults.length - 1) {
 
-                                        if (users[j].username == usernameList[k].username) {
+                                        for (var q = 0; q < roleAssignments.length; q++) {
 
-                                            var roleUserPair = new RoleToUser({
-                                                userId: users[i]._id,
-                                                boardId: result._id,
-                                                roleId: roles[i]._id
-                                            });
+                                            roleAssignments[q].save(function (err) {
 
-                                            roleUserPair.save(function (err) {
                                                 if (err) {
-                                                    return res.status(500).json({error: 'Server error'});
+                                                    return res.status(500).json({error: err.message});
                                                 }
                                             });
                                         }
                                     }
                                 }
                             }
-                            res.status(201).json({newBoard: result});
+
                         });
-                    });
+                    }
+                    res.status(201).json({board: board});
                 });
             });
         });
